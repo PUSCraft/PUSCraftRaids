@@ -11,7 +11,7 @@ import org.bukkit.event.EventHandler;
 public class Listeners {
     @EventHandler
     public void onMythicMobDead(MythicMobDeathEvent event) {
-        if (RaidCommands.region != null || RaidCommands.town != null) {
+        if (RaidCommands.region != null) {
             AbstractEntity mobEntity = event.getMob().getEntity();
             if (RaidCommands.MmEntityList.contains(mobEntity)) {
                 LivingEntity killer = event.getKiller();
