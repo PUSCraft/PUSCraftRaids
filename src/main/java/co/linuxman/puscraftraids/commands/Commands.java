@@ -29,6 +29,7 @@ public class Commands implements CommandExecutor {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aReloaded Config"));
             }
         }
+        sender.sendMessage("You do not have permission for this command");
         return false;
     }
 }
