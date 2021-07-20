@@ -10,14 +10,17 @@ public class PUSCraftRaids extends JavaPlugin {
     public static boolean cancelledRaid = false;
 
     public void onEnable() {
+        //Initialize Plugin
         plugin = this;
 
+        //Register Listeners
         getServer().getPluginManager().registerEvents(new MobListener(), this);
 
-        //getCommand("raidsperregion").setTabCompleter(new RaidsPerRegionTabCompletion());
-        //getCommand("raid").setTabCompleter(new RaidTabCompletion());
+        //Register Commands
         getCommand("raid").setExecutor(new Commands());
 
+        //Create default config/directory
+        if(!getDataFolder().exists()) getDataFolder().mkdir();
         saveDefaultConfig();
     }
 
