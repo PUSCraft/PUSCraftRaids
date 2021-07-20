@@ -17,7 +17,7 @@ public class PUSCraftRaids extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MobListener(), this);
 
         //Register Commands
-        getCommand("raid").setExecutor(new Commands());
+        getCommand("raids").setExecutor(new Commands());
 
         //Create default config/directory
         if(!getDataFolder().exists()) getDataFolder().mkdir();
