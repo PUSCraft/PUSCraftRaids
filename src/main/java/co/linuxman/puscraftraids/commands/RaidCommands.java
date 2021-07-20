@@ -51,10 +51,7 @@ public class RaidCommands implements CommandExecutor {
     public static int tier = 1;
     public static ProtectedRegion region;
 
-    public RaidCommands(PUSCraftRaids plugin) {
-        RaidCommands.plugin = plugin;
-        plugin.getCommand("raid").setExecutor(this);
-    }
+    public RaidCommands() {}
 
     private static void spawnMobs(Random rand, List<Location> regionPlayerLocations, int scoreCounter, MobManager mm, List<String> mMMobNames, List<Double> chances, List<Integer> priorities, int maxMobsPerPlayer, double mobLevel, Scoreboard board, Objective objective) {
         for(int j = 0; j < playersInRegion.size(); ++j) {
@@ -132,11 +129,11 @@ public class RaidCommands implements CommandExecutor {
         final Random rand = new Random();
         id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
             public void run() {
-                if (RaidCommands.timeReached) {
+                if (timeReached) {
                     Bukkit.getServer().getScheduler().cancelTask(id[0]);
                 } else {
                     List<Player> playerList = new ArrayList(Bukkit.getOnlinePlayers());
-                    RaidCommands.playersInRegion = new ArrayList();
+                    playersInRegion = new ArrayList();
                     List<Location> onlinePlayerLocations = new ArrayList();
                     List<Location> regionPlayerLocations = new ArrayList();
                     int scoreCounter = 0;
@@ -144,30 +141,30 @@ public class RaidCommands implements CommandExecutor {
                     int n;
                     for(n = 0; n < playerList.size(); ++n) {
                         onlinePlayerLocations.add(((Player)playerList.get(n)).getLocation());
-                        if (RaidCommands.region.contains(((Location)onlinePlayerLocations.get(n)).getBlockX(), ((Location)onlinePlayerLocations.get(n)).getBlockY(), ((Location)onlinePlayerLocations.get(n)).getBlockZ())) {
-                            RaidCommands.playersInRegion.add((Player)playerList.get(n));
+                        if (region.contains(((Location)onlinePlayerLocations.get(n)).getBlockX(), ((Location)onlinePlayerLocations.get(n)).getBlockY(), ((Location)onlinePlayerLocations.get(n)).getBlockZ())) {
+                            playersInRegion.add((Player)playerList.get(n));
                             regionPlayerLocations.add(((Player)playerList.get(n)).getLocation());
                         }
                     }
 
-                    for(n = 0; n < RaidCommands.playersInRegion.size(); ++n) {
-                        if (((Player)RaidCommands.playersInRegion.get(n)).getScoreboard() != board) {
-                            ((Player)RaidCommands.playersInRegion.get(n)).setScoreboard(board);
+                    for(n = 0; n < playersInRegion.size(); ++n) {
+                        if (((Player)playersInRegion.get(n)).getScoreboard() != board) {
+                            ((Player)playersInRegion.get(n)).setScoreboard(board);
                         }
 
-                        if (RaidCommands.raidKills.containsKey(((Player)RaidCommands.playersInRegion.get(n)).getName())) {
-                            if (RaidCommands.scoreboardPlayerData.containsKey(((Player)RaidCommands.playersInRegion.get(n)).getName())) {
-                                board.resetScores((String)RaidCommands.scoreboardPlayerData.get(((Player)RaidCommands.playersInRegion.get(n)).getName()));
+                        if (raidKills.containsKey(((Player)playersInRegion.get(n)).getName())) {
+                            if (scoreboardPlayerData.containsKey(((Player)playersInRegion.get(n)).getName())) {
+                                board.resetScores((String)scoreboardPlayerData.get(((Player)playersInRegion.get(n)).getName()));
                             }
 
-                            Score score = objective.getScore(ChatColor.YELLOW + ((Player)RaidCommands.playersInRegion.get(n)).getName() + ":    " + RaidCommands.raidKills.get(((Player)RaidCommands.playersInRegion.get(n)).getName()));
-                            RaidCommands.scoreboardPlayerData.put(((Player)RaidCommands.playersInRegion.get(n)).getName(), ChatColor.YELLOW + ((Player)RaidCommands.playersInRegion.get(n)).getName() + ":    " + RaidCommands.raidKills.get(((Player)RaidCommands.playersInRegion.get(n)).getName()));
+                            Score score = objective.getScore(ChatColor.YELLOW + ((Player)playersInRegion.get(n)).getName() + ":    " + raidKills.get(((Player)playersInRegion.get(n)).getName()));
+                            scoreboardPlayerData.put(((Player)playersInRegion.get(n)).getName(), ChatColor.YELLOW + ((Player)playersInRegion.get(n)).getName() + ":    " + raidKills.get(((Player)playersInRegion.get(n)).getName()));
                             score.setScore(0);
-                            scoreCounter += (Integer)RaidCommands.raidKills.get(((Player)RaidCommands.playersInRegion.get(n)).getName());
+                            scoreCounter += (Integer)raidKills.get(((Player)playersInRegion.get(n)).getName());
                         }
                     }
 
-                    RaidCommands.spawnMobs(rand, regionPlayerLocations, scoreCounter, mm, mMMobNames, chances, priorities, maxMobsPerPlayer, mobLevel, board, objective);
+                    spawnMobs(rand, regionPlayerLocations, scoreCounter, mm, mMMobNames, chances, priorities, maxMobsPerPlayer, mobLevel, board, objective);
                 }
 
             }
@@ -215,16 +212,6 @@ public class RaidCommands implements CommandExecutor {
                     raidCancelledSubtitle = raidCancelledSubtitle.replaceAll("@REGION", region.getId());
                 }
             }
-
-            /*if (town != null) {
-                if (raidCancelledTitle.contains("@TOWN")) {
-                    raidCancelledTitle = raidCancelledTitle.replaceAll("@TOWN", town.getName());
-                }
-
-                if (raidCancelledSubtitle.contains("@TOWN")) {
-                    raidCancelledSubtitle = raidCancelledSubtitle.replaceAll("@TOWN", town.getName());
-                }
-            }*/
 
             if (raidCancelledTitle.contains("@SENDER")) {
                 raidCancelledTitle = raidCancelledTitle.replaceAll("@SENDER", sender.getName());
@@ -381,43 +368,12 @@ public class RaidCommands implements CommandExecutor {
     private boolean isLostRaid(String tier, int goal, int minutes, CommandSender sender) {
         if (tierCountdown == 0 && minutes == 0) {
             Title title = new Title();
-            String raidLoseTitle = plugin.getConfig().getString("RaidLoseTitle");
-            String raidLoseSubtitle = plugin.getConfig().getString("RaidLoseSubtitle");
-            if (raidLoseTitle.contains("@TIER")) {
-                raidLoseTitle = raidLoseTitle.replaceAll("@TIER", tier);
-            }
-
-            if (raidLoseSubtitle.contains("@TIER")) {
-                raidLoseSubtitle = raidLoseSubtitle.replaceAll("@TIER", tier);
-            }
-
-            if (region != null) {
-                if (raidLoseTitle.contains("@REGION")) {
-                    raidLoseTitle = raidLoseTitle.replaceAll("@REGION", region.getId());
-                }
-
-                if (raidLoseSubtitle.contains("@REGION")) {
-                    raidLoseSubtitle = raidLoseSubtitle.replaceAll("@REGION", region.getId());
-                }
-            }
-
-            /*if (town != null) {
-                if (raidLoseTitle.contains("@TOWN")) {
-                    raidLoseTitle = raidLoseTitle.replaceAll("@TOWN", town.getName());
-                }
-
-                if (raidLoseSubtitle.contains("@TOWN")) {
-                    raidLoseSubtitle = raidLoseSubtitle.replaceAll("@TOWN", town.getName());
-                }
-            }*/
-
-            if (raidLoseTitle.contains("@SENDER")) {
-                raidLoseTitle = raidLoseTitle.replaceAll("@SENDER", sender.getName());
-            }
-
-            if (raidLoseSubtitle.contains("@SENDER")) {
-                raidLoseSubtitle = raidLoseSubtitle.replaceAll("@SENDER", sender.getName());
-            }
+            String raidLoseTitle = plugin.getConfig().getString("RaidLoseTitle").replaceAll("@TIER", tier)
+                    .replaceAll("@REGION", region.getId())
+                    .replaceAll("@SENDER", sender.getName());
+            String raidLoseSubtitle = plugin.getConfig().getString("RaidLoseSubtitle").replaceAll("@TIER", tier)
+                    .replaceAll("@REGION", region.getId())
+                    .replaceAll("@SENDER", sender.getName());
 
             if (totalKills < goal) {
                 //int i;
@@ -446,10 +402,6 @@ public class RaidCommands implements CommandExecutor {
                                 command = command.replaceAll("@REGION", region.getId());
                             }
 
-                            /*if (town != null && command.contains("@TOWN")) {
-                                command = command.replaceAll("@TOWN", town.getName());
-                            }*/
-
                             if (command.contains("@TIER")) {
                                 command = command.replaceAll("@TIER", tier);
                             }
@@ -464,18 +416,9 @@ public class RaidCommands implements CommandExecutor {
                         perPlayerCommands = plugin.getConfig().getStringList("RaidLoseCommands.PerPlayer");
 
                         for(int i = 0; i < perPlayerCommands.size(); ++i) {
-                            command = (String)perPlayerCommands.get(i);
-                            if (region != null && command.contains("@REGION")) {
-                                command = command.replaceAll("@REGION", region.getId());
-                            }
-
-                            /*if (town != null && command.contains("@TOWN")) {
-                                command = command.replaceAll("@TOWN", town.getName());
-                            }*/
-
-                            if (command.contains("@TIER")) {
-                                command = command.replaceAll("@TIER", tier);
-                            }
+                            command = ((String)perPlayerCommands.get(i))
+                                    .replaceAll("@REGION", region.getId())
+                                    .replaceAll("@TIER", tier);
 
                             Iterator var12 = raidKills.keySet().iterator();
 
@@ -522,29 +465,12 @@ public class RaidCommands implements CommandExecutor {
         ConfigManager cm = new ConfigManager();
         Player player = (Player)sender;
 
-        //Cancel Command
-        if (args.length == 1 && args[0].equalsIgnoreCase("cancel")) {
-            if (region == null) {
-                player.sendMessage("[RaidsPerRegion] There is not a raid in progress right now");
-                return false;
-            } else {
-                player.sendMessage("[RaidsPerRegion] Canceled raid on region " + region.getId());
-                PUSCraftRaids.cancelledRaid = true;
-                return false;
-            }
-        }
-        //If the command is not complete
-        else if (args.length != 3) {
-            player.sendMessage("[RaidsPerRegion] Invalid arguments");
-            player.sendMessage("[RaidsPerRegion] Usage: /raid region [region] [tier] OR /raid town [town] [tier]");
-            return false;
-        }
-        //There is already a raid in progress
-        else if (region != null) {
-            player.sendMessage("[RaidsPerRegion] There is already a raid in progress in region " + region.getId());
-            player.sendMessage("[RaidsPerRegion] To cancel this raid type /raid cancel");
-            return false;
-        }
+        //Cancel Command - migrated
+
+        //If the command is not complete - handle incomplete commands later
+
+        //There is already a raid in progress - will be handled by raid start
+
         //Raid Pre-Configuration
         else {
             //Get/Configure region
@@ -641,12 +567,12 @@ public class RaidCommands implements CommandExecutor {
                         if (!playersInRegion.isEmpty() && !runOnce) {
                             runOnce = true;
                             Title title = new Title();
-                            String raidAnnoucementTitle = cm.getRaidAnnoucementTitle().replace("@TIER",args[2])
-                                    .replace("@REGION", region.getId())
-                                    .replace("@SENDER", region.getId());
-                            String raidAnnoucementSubtitle = cm.getRaidAnnoucementSubtitle().replace("@TIER", args[2])
-                                    .replace("@REGION", sender.getName())
-                                    .replace("@SENDER", sender.getName());
+                            String raidAnnoucementTitle = cm.getRaidAnnoucementTitle().replaceAll("@TIER",args[2])
+                                    .replaceAll("@REGION", region.getId())
+                                    .replaceAll("@SENDER", region.getId());
+                            String raidAnnoucementSubtitle = cm.getRaidAnnoucementSubtitle().replaceAll("@TIER", args[2])
+                                    .replaceAll("@REGION", sender.getName())
+                                    .replaceAll("@SENDER", sender.getName());
 
                             for(int n = 0; n < playersInRegion.size(); ++n) {
                                 title.send((Player)playersInRegion.get(n), ChatColor.translateAlternateColorCodes('&', raidAnnoucementTitle), ChatColor.translateAlternateColorCodes('&', raidAnnoucementSubtitle), 10, 60, 10);
