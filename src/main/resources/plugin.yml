@@ -1,0 +1,14 @@
+name: PUSCraftRaids
+description: PUSCraft Fork of RaidsPerRegion, a more compact fork of the plugin to launch custom raids in a WorldGuard region.
+version: 1.0
+api-version: 1.16
+author: linuxman
+main: co.linuxman.puscraftraids.PUSCraftRaids
+depend: [WorldEdit, WorldGuard, MythicMobs]
+softdepend: [Towny]
+website: https://github.com/xlinuxmanx
+
+commands:
+  raids:
+    aliases: [puscraftraids]
+    description: Used to start, cancel, and reload raids
