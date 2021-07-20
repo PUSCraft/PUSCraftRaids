@@ -91,28 +91,28 @@ RaidMobs:
 # SpawnRateMultiplier: How fast the mobs spawn.
 # MobLevel: The level of the mobs the spawn (increasing damage and health)
 # Boss: The name of the boss (Mythic Mob) that will spawn. Set to NONE for no boss
-
-Tier1:
-  KillsGoal: 100
-  Time: 600
-  MaxMobsPerPlayer: 10
-  SpawnRateMultiplier: 1.0
-  MobLevel: 1.0
-  Boss: NONE
-Tier2:
-  KillsGoal: 300
-  Time: 900
-  MaxMobsPerPlayer: 15
-  SpawnRateMultiplier: 1.5
-  MobLevel: 5.0
-  Boss: AngrySludge
-Tier3:
-  KillsGoal: 500
-  Time: 1200
-  MaxMobsPerPlayer: 20
-  SpawnRateMultiplier: 2.0
-  MobLevel: 10.0
-  Boss: AngrySludge
+Tiers:
+  Tier1:
+    KillsGoal: 100
+    Time: 600
+    MaxMobsPerPlayer: 10
+    SpawnRateMultiplier: 1.0
+    MobLevel: 1.0
+    Boss: NONE
+  Tier2:
+    KillsGoal: 300
+    Time: 900
+    MaxMobsPerPlayer: 15
+    SpawnRateMultiplier: 1.5
+    MobLevel: 5.0
+    Boss: AngrySludge
+  Tier3:
+    KillsGoal: 500
+    Time: 1200
+    MaxMobsPerPlayer: 20
+    SpawnRateMultiplier: 2.0
+    MobLevel: 10.0
+    Boss: AngrySludge
 
 # ------  Raid Win/Loss Commands  ---------
 # This is for commands that you want to run upon a raid win/loss.
