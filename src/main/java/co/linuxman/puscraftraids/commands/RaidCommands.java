@@ -472,7 +472,7 @@ public class RaidCommands implements CommandExecutor {
         //There is already a raid in progress - will be handled by raid start
 
         //Raid Pre-Configuration
-        else {
+        if(true) {
             //Get/Configure region
             if (args[0].equalsIgnoreCase("region")) {
                 //List of regions + Get world of selected region
@@ -626,5 +626,6 @@ public class RaidCommands implements CommandExecutor {
                 return false;
             }
         }
+        return false;
     }
 }
