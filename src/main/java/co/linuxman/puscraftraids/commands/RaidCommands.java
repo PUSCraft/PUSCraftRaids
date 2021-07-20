@@ -3,7 +3,6 @@ package co.linuxman.puscraftraids.commands;
 import co.linuxman.puscraftraids.PUSCraftRaids;
 import co.linuxman.puscraftraids.configmanager.ConfigManager;
 import co.linuxman.puscraftraids.extras.Title;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.flags.Flags;
 import com.sk89q.worldguard.protection.flags.StateFlag;
@@ -278,16 +277,6 @@ public class RaidCommands implements CommandExecutor {
                     }
                 }
 
-                /*if (town != null) {
-                    if (raidWinTitle.contains("@TOWN")) {
-                        raidWinTitle = raidWinTitle.replaceAll("@TOWN", town.getName());
-                    }
-
-                    if (raidWinSubtitle.contains("@TOWN")) {
-                        raidWinSubtitle = raidWinSubtitle.replaceAll("@TOWN", town.getName());
-                    }
-                }*/
-
                 if (raidWinTitle.contains("@SENDER")) {
                     raidWinTitle = raidWinTitle.replaceAll("@SENDER", sender.getName());
                 }
@@ -318,10 +307,6 @@ public class RaidCommands implements CommandExecutor {
                                 command = command.replaceAll("@REGION", region.getId());
                             }
 
-                            /*if (town != null && command.contains("@TOWN")) {
-                                command = command.replaceAll("@TOWN", town.getName());
-                            }*/
-
                             if (command.contains("@TIER")) {
                                 command = command.replaceAll("@TIER", tier);
                             }
@@ -340,10 +325,6 @@ public class RaidCommands implements CommandExecutor {
                             if (region != null && command.contains("@REGION")) {
                                 command = command.replaceAll("@REGION", region.getId());
                             }
-
-                            /*if (town != null && command.contains("@TOWN")) {
-                                command = command.replaceAll("@TOWN", town.getName());
-                            }*/
 
                             if (command.contains("@TIER")) {
                                 command = command.replaceAll("@TIER", tier);
@@ -528,7 +509,7 @@ public class RaidCommands implements CommandExecutor {
         mMMobNames = new ArrayList();
         raidKills = new HashMap();
         PUSCraftRaids.cancelledRaid = false;
-        this.runOnce = false;
+        runOnce = false;
         priorities = new ArrayList();
         chances = new ArrayList();
         mMMobNames = new ArrayList();
@@ -539,91 +520,65 @@ public class RaidCommands implements CommandExecutor {
 
     public boolean onCommand(final CommandSender sender, Command cmd, String label, final String[] args) {
         ConfigManager cm = new ConfigManager();
-        Player p;
-        World w;
-        boolean isConsole;
-        if (sender instanceof Player) {
-            p = (Player)sender;
-            w = p.getWorld();
-            isConsole = false;
-        } else {
-            ArrayList<Player> online = new ArrayList(Bukkit.getOnlinePlayers());
-            w = ((Player)online.get(0)).getWorld();
-            isConsole = true;
-            p = null;
-        }
+        Player player = (Player)sender;
 
-        if (!isConsole && !p.hasPermission("raidsperregion.raid")) {
-            p.sendMessage(ChatColor.RED + "[RaidsPerRegion] You do not have permission to do this");
-            return false;
-        } else if (args.length == 1 && args[0].equalsIgnoreCase("cancel")) {
+        //Cancel Command
+        if (args.length == 1 && args[0].equalsIgnoreCase("cancel")) {
             if (region == null) {
-                if (isConsole) {
-                    plugin.getLogger().info("There is not a raid in progress right now");
-                } else {
-                    p.sendMessage("[RaidsPerRegion] There is not a raid in progress right now");
-                }
-
+                player.sendMessage("[RaidsPerRegion] There is not a raid in progress right now");
                 return false;
             } else {
-                if (region != null) {
-                    if (isConsole) {
-                        plugin.getLogger().info("Canceled raid on region" + region.getId());
-                    } else {
-                        p.sendMessage("[RaidsPerRegion] Canceled raid on region " + region.getId());
-                    }
-                }
-
+                player.sendMessage("[RaidsPerRegion] Canceled raid on region " + region.getId());
                 PUSCraftRaids.cancelledRaid = true;
                 return false;
             }
-        } else if (args.length != 3) {
-            if (isConsole) {
-                plugin.getLogger().info("Invalid arguments");
-                plugin.getLogger().info("Usage: /raid region [region] [tier] OR /raid town [town] [tier]");
-            } else {
-                p.sendMessage("[RaidsPerRegion] Invalid arguments");
-                p.sendMessage("[RaidsPerRegion] Usage: /raid region [region] [tier] OR /raid town [town] [tier]");
-            }
-
+        }
+        //If the command is not complete
+        else if (args.length != 3) {
+            player.sendMessage("[RaidsPerRegion] Invalid arguments");
+            player.sendMessage("[RaidsPerRegion] Usage: /raid region [region] [tier] OR /raid town [town] [tier]");
             return false;
-        } else if (region != null) {
-            if (isConsole) {
-                plugin.getLogger().info("There is already a raid in progress in region " + region.getId());
-                plugin.getLogger().info("To cancel this raid type /raid cancel");
-            } else {
-                p.sendMessage("[RaidsPerRegion] There is already a raid in progress in region " + region.getId());
-                p.sendMessage("[RaidsPerRegion] To cancel this raid type /raid cancel");
-            }
-
+        }
+        //There is already a raid in progress
+        else if (region != null) {
+            player.sendMessage("[RaidsPerRegion] There is already a raid in progress in region " + region.getId());
+            player.sendMessage("[RaidsPerRegion] To cancel this raid type /raid cancel");
             return false;
-        } else {
+        }
+        //Raid Pre-Configuration
+        else {
+            //Get/Configure region
             if (args[0].equalsIgnoreCase("region")) {
-                com.sk89q.worldedit.world.World bukkitWorld = BukkitAdapter.adapt(w);
+                //List of regions + Get world of selected region
+                List<World> worlds = PUSCraftRaids.getPlugin().getServer().getWorlds();
+                List<ProtectedRegion> regionList = new ArrayList<>();
                 RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-                RegionManager regions = container.get(bukkitWorld);
-                region = regions.getRegion(args[1]);
-                Map<String, ProtectedRegion> regionMap = regions.getRegions();
-                if (!regionMap.containsKey(args[1])) {
-                    if (isConsole) {
-                        plugin.getLogger().info("Invalid region. Useage: /raid region [region] [tier]");
-                    } else {
-                        p.sendMessage("[RaidsPerRegion] Invalid region. Useage: /raid region [region] [tier]");
-                    }
+                final RegionManager[] regions = new RegionManager[1];
+                final ProtectedRegion[] getRegion = new ProtectedRegion[1];
+                worlds.forEach((world)->{
+                    regions[0] = container.get((com.sk89q.worldedit.world.World) world);
+                    getRegion[0] = regions[0].getRegion(world.getName());
+                    regionList.add(getRegion[0]);
+                });
 
+
+                //Verify Region Validity
+                if (!regionList.contains(args[1])) {
+                    player.sendMessage("[RaidsPerRegion] Invalid region. Useage: /raid region [region] [tier]");
                     return false;
                 }
+
+                region = regions[0].getRegion(args[1]);
             }
 
+            //Check if tier exists
             if (!cm.getTiers().getKeys(false).contains(args[2])) {
-                if (isConsole) {
-                    plugin.getLogger().info("Invalid tier. Useage: /raid [region] [tier]");
-                } else {
-                    p.sendMessage("[RaidsPerRegion] Invalid tier. Useage: /raid [region] [tier]");
-                }
-
+                player.sendMessage("[RaidsPerRegion] Invalid tier. Useage: /raid [region] [tier]");
                 return false;
-            } else {
+            }
+            //Start Raid
+            else {
+                //Configure Tier Properties
                 long conversionSpawnRateMultiplier = 10L;
                 double spawnRateMultiplier = 1.0D;
                 tier = Integer.parseInt(args[2]);
@@ -640,15 +595,14 @@ public class RaidCommands implements CommandExecutor {
                     boss = "NONE";
                 }
 
-                if (conversionSpawnRateMultiplier == 0L) {
+                //Check Spawnrate
+                if (conversionSpawnRateMultiplier < 1L) {
                     conversionSpawnRateMultiplier = 1L;
-                    if (isConsole) {
-                        plugin.getLogger().info("SpawnRateMultipiler too low! defaulting to 1.0");
-                    } else {
-                        p.sendMessage("[RaidsPerRegion] SpawnRateMultipiler too low! defaulting to 1.0");
-                    }
+                    player.sendMessage("[RaidsPerRegion] SpawnRateMultipiler too low! defaulting to 1.0");
                 }
 
+                //Reset all variables, it SHOULD be executed at the very start...
+                //Set region mob spawning flags to ALLOW
                 resetVariables();
                 final MobManager mm = MythicMobs.inst().getMobManager();
                 if (region != null) {
@@ -660,6 +614,7 @@ public class RaidCommands implements CommandExecutor {
                     }
                 }
 
+                //Create scoreboard
                 ArrayList<Player> online = new ArrayList(Bukkit.getOnlinePlayers());
                 final Scoreboard board = ((Player)online.get(0)).getScoreboard();
                 final Objective objective = board.registerNewObjective("raidKills", "dummy", "" + ChatColor.BOLD + ChatColor.DARK_RED + "Raid: " + "Tier " + args[2]);
@@ -673,14 +628,16 @@ public class RaidCommands implements CommandExecutor {
                 separater.setScore(1);
                 minutes = tierCountdown / 60;
                 tierCountdown %= 60;
-                getMobsFromConfig();
+                getMobsFromConfig(); //Create scorebard for all participants
                 if (region != null) {
                     checkPlayersInRegion(board, objective, mm, mMMobNames, chances, priorities, maxMobsPerPlayer, conversionSpawnRateMultiplier, mobLevel);
                 }
 
+                //Create task for raid
                 final int[] id = new int[1];
                 id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
                     public void run() {
+                        //If region has players, send raid start title
                         if (!playersInRegion.isEmpty() && !runOnce) {
                             runOnce = true;
                             Title title = new Title();
@@ -696,6 +653,8 @@ public class RaidCommands implements CommandExecutor {
                             }
                         }
 
+                        //Each second it checks if the raid was cancelled
+                        //If not, it updates the scoreboard
                         if (!isCancelledRaid(args[2], sender) && !isWonRaid(args[2], tierCountdown, RaidCommands.boss, mm, RaidCommands.mobLevel, sender) && !isLostRaid(args[2], tierCountdown, minutes, sender)) {
                             if (tierCountdown == 0 && minutes >= 1) {
                                 minutes = minutes - 1;
@@ -720,7 +679,9 @@ public class RaidCommands implements CommandExecutor {
                                 timer.setScore(4);
                             }
 
-                        } else {
+                        }
+                        //Cancel the raid and reset everything
+                        else {
                             Bukkit.getServer().getScheduler().cancelTask(id[0]);
                             objective.unregister();
                             timeReached = true;
@@ -733,14 +694,6 @@ public class RaidCommands implements CommandExecutor {
 
                                 region = null;
                             }
-
-                            /*if (RaidCommands.town != null) {
-                                if (!RaidCommands.this.hasMobsOn) {
-                                    RaidCommands.town.setHasMobs(false);
-                                }
-
-                                RaidCommands.town = null;
-                            }*/
                         }
                     }
                 }, 0L, 20L);
