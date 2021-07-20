@@ -1,7 +1,6 @@
 package co.linuxman.puscraftraids;
 
 import co.linuxman.puscraftraids.commands.Commands;
-import co.linuxman.puscraftraids.listeners.MobListener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -14,7 +13,7 @@ public class PUSCraftRaids extends JavaPlugin {
         plugin = this;
 
         //Register Listeners
-        getServer().getPluginManager().registerEvents(new MobListener(), this);
+        //getServer().getPluginManager().registerEvents(new MobListener(), this);
 
         //Register Commands
         getCommand("raids").setExecutor(new Commands());
