@@ -20,11 +20,11 @@ public class Commands implements CommandExecutor {
                     sender.sendMessage("[RaidsPerRegion] Invalid arguments");
                     sender.sendMessage("[RaidsPerRegion] Reload Config: /raid reload");
                     sender.sendMessage("[RaidsPerRegion] View Source Code: /raid source");
-                }else if(args[0].equalsIgnoreCase("source")){
+                }else if(args.length == 1 && args[0].equalsIgnoreCase("source")){
                     //Message with source link
                     String website = String.format("Source: %s",PUSCraftRaids.getPlugin().getDescription().getWebsite());
                     sender.sendMessage(website);
-                }else if(args[0].equalsIgnoreCase("reload")){
+                }else if(args.length == 1 && args[0].equalsIgnoreCase("reload")){
                     //Reload Config
                     PUSCraftRaids.getPlugin().reloadConfig();
                     sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aReloaded Config"));
