@@ -1,6 +1,7 @@
 package co.linuxman.puscraftraids.commands;
 
 import co.linuxman.puscraftraids.PUSCraftRaids;
+import co.linuxman.puscraftraids.configmanager.ConfigManager;
 import co.linuxman.puscraftraids.extras.Title;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
@@ -33,7 +34,7 @@ public class RaidCommands implements CommandExecutor {
     private static List<Double> chances = new ArrayList();
     private static List<Integer> priorities = new ArrayList();
     private boolean runOnce = false;
-    public int countdown;
+    private int tierCountdown;
     private String tempStr = "";
     private static String tempStr2 = "";
     private static Map<String, String> scoreboardPlayerData = new HashMap();
@@ -50,7 +51,6 @@ public class RaidCommands implements CommandExecutor {
     public static AbstractEntity bossEntity;
     public static int tier = 1;
     public static ProtectedRegion region;
-    //public static Town town;
 
     public RaidCommands(PUSCraftRaids plugin) {
         RaidCommands.plugin = plugin;
@@ -127,62 +127,6 @@ public class RaidCommands implements CommandExecutor {
         }
 
     }
-
-    /*public static void checkPlayersInTown(final Scoreboard board, final Objective objective, final MobManager mm, final List<String> mMMobNames, final List<Double> chances, final List<Integer> priorities, final int maxMobsPerPlayer, long conversionSpawnRateMultiplier, final double mobLevel) {
-        final int[] id = new int[1];
-        final Random rand = new Random();
-        id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
-            public void run() {
-                if (RaidCommands.timeReached) {
-                    Bukkit.getServer().getScheduler().cancelTask(id[0]);
-                } else {
-                    //Get all online players
-                    List<Player> playerList = new ArrayList(Bukkit.getOnlinePlayers());
-                    //List for Players in selected region
-                    RaidCommands.playersInRegion = new ArrayList();
-                    //List for region players location
-                    List<Location> regionPlayerLocations = new ArrayList();
-                    int scoreCounter = 0;
-                    Town currentTown = null;
-
-                    //Get list of towns and locations
-                    for(int n = 0; n < playerList.size(); ++n) {
-                        try {
-                            currentTown = WorldCoord.parseWorldCoord(((Player)playerList.get(n)).getLocation()).getTownBlock().getTown();
-                        } catch (NotRegisteredException var7) {
-                        }
-
-                        if (currentTown == RaidCommands.town) {
-                            RaidCommands.playersInRegion.add((Player)playerList.get(n));
-                            regionPlayerLocations.add(((Player)playerList.get(n)).getLocation());
-                        }
-                    }
-
-
-                    for(int n = 0; n < RaidCommands.playersInRegion.size(); ++n) {
-                        //Give players a scoreboard
-                        if (((Player)RaidCommands.playersInRegion.get(n)).getScoreboard() != board) {
-                            ((Player)RaidCommands.playersInRegion.get(n)).setScoreboard(board);
-                        }
-
-                        if (RaidCommands.raidKills.containsKey(((Player)RaidCommands.playersInRegion.get(n)).getName())) {
-                            if (RaidCommands.scoreboardPlayerData.containsKey(((Player)RaidCommands.playersInRegion.get(n)).getName())) {
-                                board.resetScores((String)RaidCommands.scoreboardPlayerData.get(((Player)RaidCommands.playersInRegion.get(n)).getName()));
-                            }
-
-                            Score score = objective.getScore(ChatColor.YELLOW + ((Player)RaidCommands.playersInRegion.get(n)).getName() + ":    " + RaidCommands.raidKills.get(((Player)RaidCommands.playersInRegion.get(n)).getName()));
-                            RaidCommands.scoreboardPlayerData.put(((Player)RaidCommands.playersInRegion.get(n)).getName(), ChatColor.YELLOW + ((Player)RaidCommands.playersInRegion.get(n)).getName() + ":    " + RaidCommands.raidKills.get(((Player)RaidCommands.playersInRegion.get(n)).getName()));
-                            score.setScore(0);
-                            scoreCounter += (Integer)RaidCommands.raidKills.get(((Player)RaidCommands.playersInRegion.get(n)).getName());
-                        }
-                    }
-
-                    RaidCommands.spawnMobs(rand, regionPlayerLocations, scoreCounter, mm, mMMobNames, chances, priorities, maxMobsPerPlayer, mobLevel, board, objective);
-                }
-
-            }
-        }, 0L, 20L / conversionSpawnRateMultiplier);
-    }*/
 
     public static void checkPlayersInRegion(final Scoreboard board, final Objective objective, final MobManager mm, final List<String> mMMobNames, final List<Double> chances, final List<Integer> priorities, final int maxMobsPerPlayer, long conversionSpawnRateMultiplier, final double mobLevel) {
         final int[] id = new int[1];
@@ -454,7 +398,7 @@ public class RaidCommands implements CommandExecutor {
     }
 
     private boolean isLostRaid(String tier, int goal, int minutes, CommandSender sender) {
-        if (this.countdown == 0 && minutes == 0) {
+        if (tierCountdown == 0 && minutes == 0) {
             Title title = new Title();
             String raidLoseTitle = plugin.getConfig().getString("RaidLoseTitle");
             String raidLoseSubtitle = plugin.getConfig().getString("RaidLoseSubtitle");
@@ -594,6 +538,7 @@ public class RaidCommands implements CommandExecutor {
     }
 
     public boolean onCommand(final CommandSender sender, Command cmd, String label, final String[] args) {
+        ConfigManager cm = new ConfigManager();
         Player p;
         World w;
         boolean isConsole;
@@ -608,9 +553,6 @@ public class RaidCommands implements CommandExecutor {
             p = null;
         }
 
-        //int maxMobsPerPlayer = 0;
-        double spawnRateMultiplier = 1.0D;
-        long conversionSpawnRateMultiplier = 10L;
         if (!isConsole && !p.hasPermission("raidsperregion.raid")) {
             p.sendMessage(ChatColor.RED + "[RaidsPerRegion] You do not have permission to do this");
             return false;
@@ -631,14 +573,6 @@ public class RaidCommands implements CommandExecutor {
                         p.sendMessage("[RaidsPerRegion] Canceled raid on region " + region.getId());
                     }
                 }
-
-                /*if (town != null) {
-                    if (isConsole) {
-                        plugin.getLogger().info("Canceled raid on town " + town.getName());
-                    } else {
-                        p.sendMessage("[RaidsPerRegion] Canceled raid on town " + town.getName());
-                    }
-                }*/
 
                 PUSCraftRaids.cancelledRaid = true;
                 return false;
@@ -663,44 +597,7 @@ public class RaidCommands implements CommandExecutor {
             }
 
             return false;
-        } /*else if (town != null) {
-            if (isConsole) {
-                plugin.getLogger().info("There is already a raid in progress in town " + town.getName());
-                plugin.getLogger().info("To cancel this raid type /raid cancel");
-            } else {
-                p.sendMessage("[RaidsPerRegion] There is already a raid in progress in town " + town.getName());
-                p.sendMessage("[RaidsPerRegion] To cancel this raid type /raid cancel");
-            }
-
-            return false;
-        }*/ else {
-            /*if (args[0].equalsIgnoreCase("town")) {
-                PluginManager pluginManager = plugin.getServer().getPluginManager();
-                if (pluginManager.getPlugin("Towny") == null) {
-                    if (isConsole) {
-                        plugin.getLogger().info("You either do not have Towny installed or it is out of date");
-                    } else {
-                        p.sendMessage("[RaidsPerRegion] You either do not have Towny installed or it is out of date");
-                    }
-
-                    return false;
-                }
-
-                Towny towny = (Towny)pluginManager.getPlugin("Towny");
-                new TownyWorld("le_monde");
-                TownyUniverse uni = towny.getTownyUniverse();
-                town = uni.getTown(args[1]);
-                if (town == null) {
-                    if (isConsole) {
-                        plugin.getLogger().info("Invalid town. Useage: /raid town [town] [tier]");
-                    } else {
-                        p.sendMessage("[RaidsPerRegion] Invalid town. Useage: /raid town [town] [tier]");
-                    }
-
-                    return false;
-                }
-            }*/
-
+        } else {
             if (args[0].equalsIgnoreCase("region")) {
                 com.sk89q.worldedit.world.World bukkitWorld = BukkitAdapter.adapt(w);
                 RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
@@ -718,7 +615,7 @@ public class RaidCommands implements CommandExecutor {
                 }
             }
 
-            if (!args[2].contentEquals("1") && !args[2].contentEquals("2") && !args[2].contentEquals("3")) {
+            if (!cm.getTiers().getKeys(false).contains(args[2])) {
                 if (isConsole) {
                     plugin.getLogger().info("Invalid tier. Useage: /raid [region] [tier]");
                 } else {
@@ -727,15 +624,18 @@ public class RaidCommands implements CommandExecutor {
 
                 return false;
             } else {
+                long conversionSpawnRateMultiplier = 10L;
+                double spawnRateMultiplier = 1.0D;
                 tier = Integer.parseInt(args[2]);
-                final int goal = plugin.getConfig().getConfigurationSection("Tier" + String.valueOf(tier)).getInt("KillsGoal");
-                this.countdown = plugin.getConfig().getConfigurationSection("Tier" + String.valueOf(tier)).getInt("Time");
-                int maxMobsPerPlayer = plugin.getConfig().getConfigurationSection("Tier" + String.valueOf(tier)).getInt("MaxMobsPerPlayer");
-                spawnRateMultiplier = plugin.getConfig().getConfigurationSection("Tier" + String.valueOf(tier)).getDouble("SpawnRateMultiplier");
+
+                final int killsGoal = cm.getTiers().getConfigurationSection(args[2]).getInt("KillsGoal");
+                tierCountdown = cm.getTiers().getConfigurationSection(args[2]).getInt("Time");
+                int maxMobsPerPlayer = cm.getTiers().getConfigurationSection(args[2]).getInt("MaxMobsPerPlayer");
+                spawnRateMultiplier = cm.getTiers().getConfigurationSection(args[2]).getDouble("SpawnRateMultiplier");
                 conversionSpawnRateMultiplier = (long)spawnRateMultiplier;
-                mobLevel = plugin.getConfig().getConfigurationSection("Tier" + String.valueOf(tier)).getDouble("MobLevel");
-                if (plugin.getConfig().getString("SpawnBossOnKillGoalReached").equalsIgnoreCase("true")) {
-                    boss = plugin.getConfig().getConfigurationSection("Tier" + String.valueOf(tier)).getString("Boss");
+                mobLevel = cm.getTiers().getConfigurationSection(args[2]).getDouble("MobLevel");
+                if (cm.isSpawnBossOnKillGoalReached()) {
+                    boss = cm.getTiers().getConfigurationSection(args[2]).getString("Boss");
                 } else {
                     boss = "NONE";
                 }
@@ -749,135 +649,89 @@ public class RaidCommands implements CommandExecutor {
                     }
                 }
 
-                this.resetVariables();
+                resetVariables();
                 final MobManager mm = MythicMobs.inst().getMobManager();
                 if (region != null) {
                     if (region.getFlag(Flags.MOB_SPAWNING) == StateFlag.State.ALLOW) {
-                        this.hasMobsOn = true;
+                        hasMobsOn = true;
                     } else {
-                        this.hasMobsOn = false;
+                        hasMobsOn = false;
                         region.setFlag(Flags.MOB_SPAWNING, StateFlag.State.ALLOW);
                     }
                 }
-
-                /*if (town != null) {
-                    if (town.hasMobs()) {
-                        this.hasMobsOn = true;
-                    } else {
-                        this.hasMobsOn = false;
-                        town.setHasMobs(true);
-                    }
-                }*/
 
                 ArrayList<Player> online = new ArrayList(Bukkit.getOnlinePlayers());
                 final Scoreboard board = ((Player)online.get(0)).getScoreboard();
                 final Objective objective = board.registerNewObjective("raidKills", "dummy", "" + ChatColor.BOLD + ChatColor.DARK_RED + "Raid: " + "Tier " + args[2]);
                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-                Score goalKills = objective.getScore(ChatColor.GOLD + "Goal:             " + goal);
+                Score goalKills = objective.getScore(ChatColor.GOLD + "Goal:             " + killsGoal);
                 Score totalScore = objective.getScore(ChatColor.AQUA + "Total Kills:      0");
                 tempStr2 = ChatColor.AQUA + "Total Kills:      0";
                 totalScore.setScore(3);
                 goalKills.setScore(2);
                 Score separater = objective.getScore(ChatColor.DARK_RED + "----------------------");
                 separater.setScore(1);
-                this.minutes = this.countdown / 60;
-                this.countdown %= 60;
-                this.getMobsFromConfig();
+                minutes = tierCountdown / 60;
+                tierCountdown %= 60;
+                getMobsFromConfig();
                 if (region != null) {
                     checkPlayersInRegion(board, objective, mm, mMMobNames, chances, priorities, maxMobsPerPlayer, conversionSpawnRateMultiplier, mobLevel);
                 }
 
-                /*if (town != null) {
-                    checkPlayersInTown(board, objective, mm, mMMobNames, chances, priorities, maxMobsPerPlayer, conversionSpawnRateMultiplier, mobLevel);
-                }*/
-
                 final int[] id = new int[1];
                 id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
                     public void run() {
-                        if (!RaidCommands.playersInRegion.isEmpty() && !RaidCommands.this.runOnce) {
-                            RaidCommands.this.runOnce = true;
+                        if (!playersInRegion.isEmpty() && !runOnce) {
+                            runOnce = true;
                             Title title = new Title();
-                            String raidAnnoucementTitle = RaidCommands.plugin.getConfig().getString("RaidAnnoucementTitle");
-                            String raidAnnoucementSubtitle = RaidCommands.plugin.getConfig().getString("RaidAnnoucementSubtitle");
-                            if (raidAnnoucementTitle.contains("@TIER")) {
-                                raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@TIER", args[2]);
-                            }
+                            String raidAnnoucementTitle = cm.getRaidAnnoucementTitle().replace("@TIER",args[2])
+                                    .replace("@REGION", region.getId())
+                                    .replace("@SENDER", region.getId());
+                            String raidAnnoucementSubtitle = cm.getRaidAnnoucementSubtitle().replace("@TIER", args[2])
+                                    .replace("@REGION", sender.getName())
+                                    .replace("@SENDER", sender.getName());
 
-                            if (raidAnnoucementSubtitle.contains("@TIER")) {
-                                raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@TIER", args[2]);
-                            }
-
-                            if (RaidCommands.region != null) {
-                                if (raidAnnoucementTitle.contains("@REGION")) {
-                                    raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@REGION", RaidCommands.region.getId());
-                                }
-
-                                if (raidAnnoucementSubtitle.contains("@REGION")) {
-                                    raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@REGION", RaidCommands.region.getId());
-                                }
-                            }
-
-                            /*if (RaidCommands.town != null) {
-                                if (raidAnnoucementTitle.contains("@TOWN")) {
-                                    raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@TOWN", RaidCommands.town.getName());
-                                }
-
-                                if (raidAnnoucementSubtitle.contains("@TOWN")) {
-                                    raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@TOWN", RaidCommands.town.getName());
-                                }
-                            }*/
-
-                            if (raidAnnoucementTitle.contains("@SENDER")) {
-                                raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@SENDER", sender.getName());
-                            }
-
-                            if (raidAnnoucementSubtitle.contains("@SENDER")) {
-                                raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@SENDER", sender.getName());
-                            }
-
-                            for(int n = 0; n < RaidCommands.playersInRegion.size(); ++n) {
-                                title.send((Player)RaidCommands.playersInRegion.get(n), ChatColor.translateAlternateColorCodes('&', raidAnnoucementTitle), ChatColor.translateAlternateColorCodes('&', raidAnnoucementSubtitle), 10, 60, 10);
+                            for(int n = 0; n < playersInRegion.size(); ++n) {
+                                title.send((Player)playersInRegion.get(n), ChatColor.translateAlternateColorCodes('&', raidAnnoucementTitle), ChatColor.translateAlternateColorCodes('&', raidAnnoucementSubtitle), 10, 60, 10);
                             }
                         }
 
-                        if (!RaidCommands.this.isCancelledRaid(args[2], sender) && !RaidCommands.this.isWonRaid(args[2], goal, RaidCommands.boss, mm, RaidCommands.mobLevel, sender) && !RaidCommands.this.isLostRaid(args[2], goal, RaidCommands.this.minutes, sender)) {
-                            if (RaidCommands.this.countdown == 0 && RaidCommands.this.minutes >= 1) {
-                                RaidCommands var10000 = RaidCommands.this;
-                                var10000.minutes = var10000.minutes - 1;
-                                var10000 = RaidCommands.this;
-                                var10000.countdown += 60;
+                        if (!isCancelledRaid(args[2], sender) && !isWonRaid(args[2], tierCountdown, RaidCommands.boss, mm, RaidCommands.mobLevel, sender) && !isLostRaid(args[2], tierCountdown, minutes, sender)) {
+                            if (tierCountdown == 0 && minutes >= 1) {
+                                minutes = minutes - 1;
+                                tierCountdown += 60;
                             }
 
-                            --RaidCommands.this.countdown;
+                            --tierCountdown;
 
                             try {
-                                board.resetScores(RaidCommands.this.tempStr);
+                                board.resetScores(tempStr);
                             } catch (NullPointerException var5) {
                             }
 
                             Score timer;
-                            if (RaidCommands.this.countdown <= 9) {
-                                timer = objective.getScore(ChatColor.GREEN + "Time:             " + RaidCommands.this.minutes + ":0" + RaidCommands.this.countdown);
-                                RaidCommands.this.tempStr = ChatColor.GREEN + "Time:             " + RaidCommands.this.minutes + ":0" + RaidCommands.this.countdown;
+                            if (tierCountdown <= 9) {
+                                timer = objective.getScore(ChatColor.GREEN + "Time:             " + minutes + ":0" + tierCountdown);
+                                tempStr = ChatColor.GREEN + "Time:             " + minutes + ":0" + tierCountdown;
                                 timer.setScore(4);
                             } else {
-                                timer = objective.getScore(ChatColor.GREEN + "Time:             " + RaidCommands.this.minutes + ":" + RaidCommands.this.countdown);
-                                RaidCommands.this.tempStr = ChatColor.GREEN + "Time:             " + RaidCommands.this.minutes + ":" + RaidCommands.this.countdown;
+                                timer = objective.getScore(ChatColor.GREEN + "Time:             " + minutes + ":" + tierCountdown);
+                                tempStr = ChatColor.GREEN + "Time:             " + minutes + ":" + tierCountdown;
                                 timer.setScore(4);
                             }
 
                         } else {
                             Bukkit.getServer().getScheduler().cancelTask(id[0]);
                             objective.unregister();
-                            RaidCommands.timeReached = true;
-                            RaidCommands.boss = "NONE";
-                            RaidCommands.mobLevel = 1.0D;
-                            if (RaidCommands.region != null) {
-                                if (!RaidCommands.this.hasMobsOn) {
-                                    RaidCommands.region.setFlag(Flags.MOB_SPAWNING, StateFlag.State.DENY);
+                            timeReached = true;
+                            boss = "NONE";
+                            mobLevel = 1.0D;
+                            if (region != null) {
+                                if (!hasMobsOn) {
+                                    region.setFlag(Flags.MOB_SPAWNING, StateFlag.State.DENY);
                                 }
 
-                                RaidCommands.region = null;
+                                region = null;
                             }
 
                             /*if (RaidCommands.town != null) {
