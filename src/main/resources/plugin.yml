@@ -5,8 +5,7 @@ api-version: 1.16
 author: linuxman
 main: co.linuxman.puscraftraids.PUSCraftRaids
 depend: [WorldEdit, WorldGuard, MythicMobs]
-softdepend: [Towny]
-website: https://github.com/xlinuxmanx
+website: https://github.com/xlinuxmanx/PUSCraftRaids
 
 commands:
   raids:
