@@ -9,6 +9,7 @@ public class PUSCraftRaids extends JavaPlugin {
     public static boolean cancelledRaid = false;
 
     public void onEnable() {
+        //Test Comment
         //Initialize Plugin
         plugin = this;
 
